@@ -1,0 +1,550 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- favicon info -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/meta/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/meta/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/meta/favicon-16x16.png">
+  <link rel="manifest" href="/meta/site.webmanifest">
+  <link rel="mask-icon" href="/meta/safari-pinned-tab.svg" color="#5bbad5">
+  <meta name="msapplication-TileColor" content="#da532c">
+  <meta name="theme-color" content="#ffffff">
+
+  <!-- styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <title>Sliding Puzzle</title>
+</head>
+
+<script>
+  let tilesPerRow = 3
+  let gridData = {}
+  let puzzleImage = 'url(images/pyramid.jpg)'
+
+  function makeInitialGrid(tilesPerRow) {
+    let gridData = {}
+    let tileVal = 0
+
+    Array.from(Array(tilesPerRow)).forEach((blank, rowIndex) => {
+      gridData[rowIndex] = []
+      Array.from(Array(tilesPerRow)).forEach((blank, colIndex) => {
+        if (rowIndex === tilesPerRow - 1 && colIndex === tilesPerRow - 1) {
+          gridData[rowIndex] = [...gridData[rowIndex], 'blank']
+        } else {
+          gridData[rowIndex] = [...gridData[rowIndex], tileVal]
+          tileVal += 1
+        }
+      })
+    })
+    return gridData
+  }
+
+  function checkSolved(gridData) {
+    // define a tracking variable
+    let isSolved = true
+
+    // convert gridData to an array
+    let data = []
+
+    // fill data variable
+    Object.keys(gridData).forEach(rowIndex => {
+      data = data.concat(gridData[rowIndex])
+    })
+
+    // check if blank is the last item
+    if (data.indexOf('blank') !== data.length - 1) {
+      isSolved = false
+    } else {
+      data = data.filter(item => item !== 'blank')
+
+
+      data.forEach((item, index) => {
+        // check all items, but don't look for a value that is outside of the data array
+        if (index !== data.length - 1) {
+          // check that items are in accending order
+          if (item > data[index + 1]) {
+            // can be made false if any test fails
+            isSolved = false
+          }
+        }
+      })
+    }
+    if (isSolved) {
+      fireworks.style.display = 'block'
+      // this forces a style recalc, that makes the opacity transition happen
+      fireworks.offsetHeight;
+      fireworks.style.opacity = 1
+      fireworks.style.cursor = 'pointer'
+      fireworks.addEventListener('click', () => {
+        fireworks.style.display = 'none'
+        fireworks.style.opacity = 0
+      })
+    }
+  }
+
+  function renderPuzzle(puzzleArea, gridData) {
+    // clear old puzzle
+    puzzleArea.innerHTML = ''
+
+    // tileVal = 0
+    // tileData = {}
+
+    // loop over rows
+    Object.keys(gridData).forEach(rowIndex => {
+      // create row
+      const row = document.createElement('div');
+      row.classList.add('tile-row')
+      row.style.height = puzzleArea.offsetHeight / tilesPerRow
+
+
+
+      // loop over cols
+      gridData[rowIndex].forEach((tileVal, colIndex) => {
+        // make tile
+        const tile = document.createElement('div');
+        tile.classList.add('tile')
+        tile.style.width = puzzleArea.offsetHeight / tilesPerRow
+
+        // styles are dependent on whether 
+        if (tileVal !== 'blank') {
+          tile.innerText = tileVal
+
+          // this is how change image needs to act
+          tile.style.fontSize = puzzleImage === '' ? '24px' : '0px'
+          tile.style.backgroundColor = puzzleImage === '' ? '#448a39' : ''
+          // tile.style.backgroundImage = 'url(pyramid.jpg)'
+          tile.style.backgroundImage = puzzleImage
+          tile.style.backgroundSize = `${puzzleArea.offsetHeight}px ${puzzleArea.offsetWidth}px`
+          tile.style.backgroundPosition = `${100 * (tileVal % tilesPerRow / (tilesPerRow - 1))}% ${100 * (Math.floor(tileVal / tilesPerRow) / (tilesPerRow - 1))}%`
+
+        } else {
+          tile.style.backgroundColor = '#131313'
+          // tile.style.border = '3px solid #f3bb30'
+        }
+
+        // handle click events
+        tile.addEventListener('click', () => {
+
+          // get arrays with values from row and columns of the clicked cell
+          let rowData = gridData[rowIndex]
+          let colData = Object.keys(gridData).map(row => {
+            return gridData[row][colIndex]
+          })
+
+          if (rowData.includes('blank')) {
+            // remove the blank item
+            rowData = rowData.filter(val => val !== 'blank')
+            // add the blank value to the row in the cell that was clicked
+            rowData.splice(colIndex, 0, 'blank');
+            // update the clicked row in gridData
+            gridData[rowIndex] = rowData
+            // check if puzzle is solved
+            checkSolved(gridData)
+          } else if (colData.includes('blank')) {
+            // remove the blank item
+            colData = colData.filter(val => val !== 'blank')
+            // add the blank value to the row in the cell that was clicked
+            colData.splice(rowIndex, 0, 'blank');
+            // update the clicked column in gridData
+            Object.keys(gridData).forEach(rowIndex => {
+              gridData[rowIndex][colIndex] = colData[rowIndex]
+            })
+            // check if puzzle is solved
+            checkSolved(gridData)
+          } else {
+            // shake puzzle when cell clicked is not in row or column
+            puzzleArea.classList.add('puzzle-area-shake')
+            setTimeout(() => {
+              puzzleArea.classList.remove('puzzle-area-shake')
+            }, 200);
+          }
+          // rerender puzzle with new gridData
+          renderPuzzle(puzzleArea, gridData)
+        })
+
+        row.append(tile)
+      })
+      puzzleArea.append(row)
+    })
+
+    Object.keys(gridData).forEach(rowIndex => {
+      gridData[rowIndex].forEach((tileVal, colIndex) => {
+      })
+    })
+  }
+
+
+  window.addEventListener('DOMContentLoaded', (event) => {
+    // make javascript objects from HTML elements
+    const puzzleArea = document.getElementById('puzzle-area')
+    const scrambleButton = document.getElementById('scramble-button')
+    const tilesPerRowSlider = document.getElementById("tiles-per-row-slider");
+    const tilesPerRowValue = document.getElementById("tiles-per-row-value");
+    const fireworks = document.getElementById('fireworks')
+    const changeImageButton = document.getElementById('change-image-button')
+    const changeImageMenuHolder = document.getElementById('change-image-menu-holder')
+    const changeImageOverlay = document.getElementById('change-image-overlay')
+    const changeImageMenu = document.getElementById('change-image-menu')
+    const numbersImage = document.getElementById('numbers-image')
+    const birdsImage = document.getElementById('birds-image')
+    const pyramidImage = document.getElementById('pyramid-image')
+    const halfDomeImage = document.getElementById('half-dome-image')
+    const smokeyImage = document.getElementById('smokey-image')
+    const lofiGirlImage = document.getElementById('lofi-girl-image')
+    const javascriptJabberImage = document.getElementById('javascript-jabber-image')
+    const findingNemoImage = document.getElementById('finding-nemo-image')
+    const customImageOption = document.getElementById('custom-image-option')
+    const customImageMenuHolder = document.getElementById('custom-image-menu-holder')
+    const customImageOverlay = document.getElementById('custom-image-overlay')
+    const customImageMenu = document.getElementById('custom-image-menu')
+    const uploadImageButton = document.getElementById('upload-image-button')
+    const confirmButton = document.getElementById('confirm-button')
+    const imagePreview = document.getElementById('image-preview')
+    const showOptionsButton = document.getElementById('show-options-button')
+    const navButtonsSection = document.getElementById('nav-buttons-section')
+    const navContent = document.getElementById('nav-content')
+
+
+    // generate initial grid and render it
+    gridData = makeInitialGrid(tilesPerRow)
+    renderPuzzle(puzzleArea, gridData)
+
+    // rerender puzzle on window resize
+    window.addEventListener('resize', () => {
+      renderPuzzle(puzzleArea, gridData)
+    })
+
+    let scamblingInveralId;
+
+    function startScramble() {
+      if (!scamblingInveralId) {
+        scamblingInveralId = setInterval(scramble, 5);
+      }
+    }
+
+    function stopScramble() {
+      clearInterval(scamblingInveralId);
+      // release our intervalID from the variable
+      scamblingInveralId = null;
+    }
+
+    scrambleButton.addEventListener('mousedown', () => {
+      startScramble()
+    })
+
+    scrambleButton.addEventListener('mouseup', () => {
+      stopScramble()
+    })
+
+    scrambleButton.addEventListener('mouseleave', () => {
+      stopScramble()
+    })
+
+    function scramble() {
+      // half the time scramble by row, other half the time scramble by column
+      if (Math.random() > 0.5) {
+        // figure out which row has blank
+        let rowToScramble;
+        Object.keys(gridData).forEach(rowIndex => {
+          if (gridData[rowIndex].includes('blank')) {
+            rowToScramble = rowIndex
+          }
+        })
+
+        // remove the blank from the row
+        let newRow = gridData[rowToScramble].filter(val => val !== 'blank')
+        // determine new spot for blank
+        const newBlankIndex = Math.floor(Math.random() * tilesPerRow)
+        // add blank in at random spot
+        newRow.splice(newBlankIndex, 0, 'blank');
+        // update grid data
+        gridData[rowToScramble] = newRow
+        // rerender puzzle with new data
+        renderPuzzle(puzzleArea, gridData)
+      } else {
+        // figure out which column has blank
+        let colToScramble;
+        Object.keys(gridData).forEach(rowIndex => {
+          if (gridData[rowIndex].includes('blank')) {
+            colToScramble = gridData[rowIndex].indexOf('blank')
+          }
+        })
+        // get the data for that column
+        let colData = Object.keys(gridData).map(row => {
+          return gridData[row][colToScramble]
+        })
+        // remove the blank from the column
+        let newCol = colData.filter(val => val !== 'blank')
+
+        // determine new spot for blank
+        const newBlankIndex = Math.floor(Math.random() * tilesPerRow)
+        // add blank in at random spot
+        newCol.splice(newBlankIndex, 0, 'blank');
+        // update grid data
+        Object.keys(gridData).forEach(rowIndex => {
+          gridData[rowIndex][colToScramble] = newCol[rowIndex]
+        })
+        // rerender puzzle with new data
+        renderPuzzle(puzzleArea, gridData)
+
+      }
+    }
+
+    showOptionsButton.addEventListener('click', () => {
+      console.log('clicked')
+      showOptionsButton.style.display = 'none'
+      navButtonsSection.style.display = 'flex'
+      navContent.style.height = '180px'
+    })
+
+
+
+    changeImageButton.addEventListener('click', () => {
+      changeImageMenuHolder.style.display = 'block'
+      changeImageMenuHolder.style.opacity = 1
+      changeImageOverlay.addEventListener('click', () => {
+        changeImageMenuHolder.style.display = 'none'
+        changeImageMenuHolder.style.opacity = 0
+      })
+    })
+
+    numbersImage.addEventListener('click', () => {
+      changeImageMenuHolder.style.display = 'none'
+      changeImageMenuHolder.style.opacity = 0
+      puzzleImage = ''
+      renderPuzzle(puzzleArea, gridData)
+    })
+
+    birdsImage.addEventListener('click', () => {
+      changeImageMenuHolder.style.display = 'none'
+      changeImageMenuHolder.style.opacity = 0
+      puzzleImage = 'url(images/birds.jpeg)'
+      renderPuzzle(puzzleArea, gridData)
+    })
+
+    pyramidImage.addEventListener('click', () => {
+      changeImageMenuHolder.style.display = 'none'
+      changeImageMenuHolder.style.opacity = 0
+      puzzleImage = 'url(images/pyramid.jpg)'
+      renderPuzzle(puzzleArea, gridData)
+    })
+
+    halfDomeImage.addEventListener('click', () => {
+      changeImageMenuHolder.style.display = 'none'
+      changeImageMenuHolder.style.opacity = 0
+      puzzleImage = 'url(images/half_dome.jpeg)'
+      renderPuzzle(puzzleArea, gridData)
+    })
+
+    smokeyImage.addEventListener('click', () => {
+      changeImageMenuHolder.style.display = 'none'
+      changeImageMenuHolder.style.opacity = 0
+      puzzleImage = 'url(images/smokey.jpg)'
+      renderPuzzle(puzzleArea, gridData)
+    })
+
+    lofiGirlImage.addEventListener('click', () => {
+      changeImageMenuHolder.style.display = 'none'
+      changeImageMenuHolder.style.opacity = 0
+      puzzleImage = 'url(images/lofi_girl.jpeg)'
+      renderPuzzle(puzzleArea, gridData)
+    })
+
+    javascriptJabberImage.addEventListener('click', () => {
+      changeImageMenuHolder.style.display = 'none'
+      changeImageMenuHolder.style.opacity = 0
+      puzzleImage = 'url(images/javascript_jabber.jpeg)'
+      renderPuzzle(puzzleArea, gridData)
+    })
+
+    findingNemoImage.addEventListener('click', () => {
+      changeImageMenuHolder.style.display = 'none'
+      changeImageMenuHolder.style.opacity = 0
+      puzzleImage = 'url(images/finding_nemo.jpeg)'
+      renderPuzzle(puzzleArea, gridData)
+    })
+
+    customImageOption.addEventListener('click', () => {
+      customImageMenuHolder.style.display = 'block'
+      customImageMenuHolder.style.opacity = 1
+      customImageOverlay.addEventListener('click', () => {
+        changeImageMenuHolder.style.display = 'none'
+        changeImageMenuHolder.style.opacity = 0
+        customImageMenuHolder.style.display = 'none'
+        customImageMenuHolder.style.opacity = 0
+
+        // reset menu configuration
+        imagePreview.style.display = 'none'
+        confirmButton.style.display = 'none'
+        URL.revokeObjectURL(imagePreview.src);  // no longer needed, free memory
+      })
+    })
+
+    window.addEventListener('load', function () {
+      document.querySelector('input[type="file"]').addEventListener('change', function () {
+        if (this.files && this.files[0]) {
+
+          // update styles
+          imagePreview.style.display = 'block'
+          confirmButton.style.display = 'block'
+
+          imagePreview.onload = () => {
+            URL.revokeObjectURL(imagePreview.src);  // no longer needed, free memory
+          }
+
+          imagePreview.src = URL.createObjectURL(this.files[0]); // set src to blob url
+          uploadImageButton.innerText = 'Change image'
+
+          confirmButton.addEventListener('click', () => {
+            // remove overlays
+            changeImageMenuHolder.style.display = 'none'
+            changeImageMenuHolder.style.opacity = 0
+            customImageMenuHolder.style.display = 'none'
+            customImageMenuHolder.style.opacity = 0
+            // reset menu configuration
+            imagePreview.style.display = 'none'
+            confirmButton.style.display = 'none'
+            URL.revokeObjectURL(imagePreview.src);  // no longer needed, free memory
+            // update puzzle image and rerender
+            puzzleImage = `url(${URL.createObjectURL(this.files[0])})`
+            renderPuzzle(puzzleArea, gridData)
+          })
+        }
+      });
+    });
+
+
+    // listen for slider changes and update field
+    tilesPerRowSlider.oninput = function () {
+      tilesPerRowValue.innerHTML = this.value;
+      tilesPerRow = parseInt(this.value)
+
+      // update gridData and rerender
+      gridData = makeInitialGrid(tilesPerRow)
+      renderPuzzle(puzzleArea, gridData)
+    };
+
+    // get updated year
+    const footerName = document.getElementById("footer-name");
+    const year = new Date().getFullYear();
+    footerName.innerText = `Garrett Roell ${year}`;
+
+  });
+</script>
+
+<body>
+  <div class="top-line"></div>
+  <div class="top-line-gradient"></div>
+  <nav>
+    <div class="nav-content" id="nav-content">
+      <h1>Sliding Puzzle</h1>
+      <button class="show-options-button" id="show-options-button">show options</button>
+      <div class="nav-buttons-section" id="nav-buttons-section">
+        <div class="nav-buttons">
+          <button id="scramble-button">scramble</button>
+          <button id="change-image-button">change image</button>
+        </div>
+        <div class="dimension-control">
+          <input type="range" min="2" max="10" value="3" id="tiles-per-row-slider">
+          <div class="slider-row">
+            <p>tiles per row:</p>
+            <p id="tiles-per-row-value">3</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="puzzle-area" id="puzzle-area"></div>
+
+  <!-- change menu -->
+  <div class="change-image-menu-holder" id="change-image-menu-holder">
+    <div class="menu-overlay" id="change-image-overlay"></div>
+    <div class="change-image-menu" id="change-image-menu">
+      <p class="choose-image">Choose image</p>
+      <div class="image-options">
+        <div class="image-options-row">
+
+          <div class="image-option" id="numbers-image" style="background-image: url(images/numbers.png);"></div>
+          <div class="image-option" id="birds-image" style="background-image: url(images/birds.jpeg);"></div>
+          <div class="image-option" id="pyramid-image" style="background-image: url(images/pyramid.jpg);"></div>
+        </div>
+        <div class="image-options-row">
+          <div class="image-option" id="half-dome-image" style="background-image: url(images/half_dome.jpeg);"></div>
+          <div class="image-option" id="smokey-image" style="background-image: url(images/smokey.jpg);"></div>
+          <div class="image-option" id="lofi-girl-image" style="background-image: url(images/lofi_girl.jpeg);"></div>
+        </div>
+        <div class="image-options-row">
+          <div class="image-option" id="javascript-jabber-image"
+            style="background-image: url(images/javascript_jabber.jpeg);">
+          </div>
+          <div class="image-option" id="finding-nemo-image" style="background-image: url(images/finding_nemo.jpeg);">
+          </div>
+          <div class="custom-image-option" id="custom-image-option">
+            <p>upload<br>custom<br>image</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- custom image menu -->
+  <div class="change-image-menu-holder" id="custom-image-menu-holder">
+    <div class="menu-overlay" id="custom-image-overlay"></div>
+    <div class="change-image-menu" id="custom-image-menu">
+      <p class="custom-image">Custom image</p>
+      <p class="image-upload">
+        <input type="file" accept="image/*" name="image" id="file" style="display: none;">
+      </p>
+      <label class="image-preview-holder" for="file">
+        <img src="#" id="image-preview" class="image-preview" />
+      </label>
+      <p class="upload-image-button-holder">
+        <label for="file" class="upload-image-button" id="upload-image-button">Choose Image</label>
+        <label class="upload-image-button confirm-button" id="confirm-button">Confirm Image</label>
+      </p>
+
+    </div>
+  </div>
+
+  <!-- footer -->
+  <div class="footer">
+    <div class="footer-container">
+      <a href="https://garrettroell.com" target="_blank" class="footer-link" id="footer-name"></a>
+      <a href="https://github.com/garrettroell/sliding_puzzle" target="_blank">
+        <button class="github-button">
+          <div class="logo-holder">
+            <svg stroke="rgba(255, 255, 255, 0.70)" fill="none" stroke-width="2" viewBox="0 0 24 24"
+              stroke-linecap="round" stroke-linejoin="round" height="1.25em" width="1.25em"
+              xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+              </path>
+            </svg>
+          </div>
+        </button>
+      </a>
+    </div>
+  </div>
+
+  <!-- celebration -->
+  <div class="fireworks" id="fireworks">
+    <div class="before"></div>
+    <div class="after"></div>
+    <div class="celebration-text-holder">
+      <div class="celebration-text">
+        <h2>Success!</h2>
+        <p>Click anywhere to return to the puzzle</p>
+      </div>
+    </div>
+  </div>
+
+
+
+</body>
+
+</html>
